@@ -1,0 +1,17 @@
+LICENSE
+README.md
+pyproject.toml
+src/mijen/__init__.py
+src/mijen/main.py
+src/mijen/storage.py
+src/mijen.egg-info/PKG-INFO
+src/mijen.egg-info/SOURCES.txt
+src/mijen.egg-info/dependency_links.txt
+src/mijen.egg-info/requires.txt
+src/mijen.egg-info/top_level.txt
+src/mijen/ui/__init__.py
+src/mijen/ui/theme.py
+src/mijen/ui/pages/__init__.py
+src/mijen/ui/pages/home.py
+src/mijen/ui/pages/projects.py
+src/mijen/ui/pages/setup.py

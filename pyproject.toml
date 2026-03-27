@@ -1,0 +1,17 @@
+[project]
+name = "mijen"
+version = "0.1.0"
+description = "Minimalistic Jenkins-like automation server for educational purpose"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "nicegui>=3.9.0",
+    "psycopg2-binary>=2.9.11",
+    "sqlalchemy>=2.0.48",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+package = true

@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mijen:
+    build: .
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Note: We use 'db' as the hostname, not 'localhost'
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./workspaces:/app/workspaces
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

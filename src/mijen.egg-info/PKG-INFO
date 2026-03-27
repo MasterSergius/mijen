@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: mijen
+Version: 0.1.0
+Summary: Minimalistic Jenkins-like automation server for educational purpose
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: nicegui>=3.9.0
+Requires-Dist: psycopg2-binary>=2.9.11
+Requires-Dist: sqlalchemy>=2.0.48
+Dynamic: license-file
+
+# MiJen
+Minimalist Jenkins-like automation server for students
