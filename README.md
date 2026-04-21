@@ -2,12 +2,22 @@
 
 Minimalist Jenkins-like automation server. Define projects, attach shell tasks, and run them on demand, on a cron schedule, or via webhook — all from a clean web UI.
 
+**WARNING**: This project contains 99% of "vibecode" (made by claude-code).
+
 - **No YAML pipelines** — commands are plain shell scripts stored in the database
 - **Two source types** — GitHub URL (auto clone/pull) or local directory
 - **Live log streaming** — watch build output in real time
 - **Cron & webhook triggers** — schedule runs or fire them from external systems
 - **Per-project system packages** — install apt dependencies once, shared across all tasks
 - **Per-task setup commands** — run install steps before the main command
+
+---
+
+### Welcome page
+<img width="1876" height="469" alt="image" src="https://github.com/user-attachments/assets/ef2396fd-ff5b-4da7-ba6e-be550375ff2d" />
+
+### Run history
+<img width="1856" height="938" alt="image" src="https://github.com/user-attachments/assets/20657f01-26e6-49f0-873d-bb195fe68278" />
 
 ---
 
