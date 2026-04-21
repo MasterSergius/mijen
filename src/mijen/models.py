@@ -9,9 +9,12 @@ class Base(DeclarativeBase):
 
 class Project(Base):
     __tablename__ = "projects"
-    id = Column(String, primary_key=True)
+
+    id = Column(String, primary_key=True)          # UUID string
     name = Column(String, nullable=False)
-    url = Column(String, nullable=False)
+    source_type = Column(String, nullable=False)   # 'github' | 'local'
+    source = Column(String, nullable=False)        # GitHub URL or absolute local path
+    system_packages = Column(Text, nullable=True)  # space-separated apt packages
 
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
 
@@ -19,47 +22,41 @@ class Project(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    # Make 'id' the ONLY primary key
-    id = Column(String, primary_key=True)
-
-    # This is still a foreign key, but NO LONGER a primary key
+    id = Column(String, primary_key=True)          # UUID string
     project_id = Column(String, ForeignKey("projects.id"), nullable=False)
-
     name = Column(String, nullable=False)
     command = Column(Text, nullable=False)
+    setup_command = Column(Text, nullable=True)    # runs before command, in the workspace
 
     project = relationship("Project", back_populates="tasks")
-    triggers = relationship(
-        "Trigger", back_populates="task", cascade="all, delete-orphan"
-    )
+    triggers = relationship("Trigger", back_populates="task", cascade="all, delete-orphan")
     history = relationship(
-        "BuildHistory", back_populates="task", cascade="all, delete-orphan"
+        "BuildHistory",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="BuildHistory.start_time.desc()",
     )
 
 
 class Trigger(Base):
     __tablename__ = "triggers"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    task_id = Column(String, ForeignKey("tasks.id"))
-
-    # 'cron' (schedule), 'webhook' (PR), 'checksum' (local repo)
-    trigger_type = Column(String, nullable=False)
-
-    # Store trigger config (e.g., {"cron": "0 * * * *"} or {"path": "/src"})
-    # JSON is perfect for different trigger needs
-    config = Column(JSON, nullable=True)
+    task_id = Column(String, ForeignKey("tasks.id"), nullable=False)
+    trigger_type = Column(String, nullable=False)  # 'cron' | 'webhook'
+    config = Column(JSON, nullable=True)           # e.g. {"cron": "0 * * * *"}
 
     task = relationship("Task", back_populates="triggers")
 
 
 class BuildHistory(Base):
     __tablename__ = "build_history"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    task_id = Column(String, ForeignKey("tasks.id"))
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(String, ForeignKey("tasks.id"), nullable=False)
     start_time = Column(DateTime, default=datetime.datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
-    status = Column(String)  # 'Success', 'Failed', 'Running'
-    output_log = Column(Text, nullable=True)  # The console output
+    status = Column(String, nullable=False)        # 'running' | 'success' | 'failed'
+    output_log = Column(Text, nullable=True)
 
     task = relationship("Task", back_populates="history")

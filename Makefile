@@ -3,7 +3,7 @@ COMPOSE = docker compose
 APP_SERVICE = mijen
 DB_SERVICE = db
 
-.PHONY: up down restart build reset logs ps shell clean
+.PHONY: up down restart build rebuild reset logs logs-app logs-db ps shell clean
 
 # Start the project in the background
 up:
@@ -13,21 +13,33 @@ up:
 down:
 	$(COMPOSE) down
 
-# Rebuild and start
-restart: down up
+# Rebuild everything and start
+restart: down build up
 
-# Build or rebuild services
+# Rebuild only the app image and restart it (no DB restart, no volume wipe)
+rebuild:
+	$(COMPOSE) up --build -d --no-deps $(APP_SERVICE)
+
+# Build or rebuild images
 build:
 	$(COMPOSE) build
 
-# THE "NUCLEAR" OPTION: Wipe everything (including DB volumes) and start fresh
+# THE "NUCLEAR" OPTION: wipe everything (including DB volumes) and start fresh
 reset:
 	$(COMPOSE) down -v
 	$(COMPOSE) up --build -d
 
-# View live logs
+# View live logs for all services
 logs:
 	$(COMPOSE) logs -f
+
+# View live logs for the app only
+logs-app:
+	$(COMPOSE) logs -f $(APP_SERVICE)
+
+# View live logs for the database only
+logs-db:
+	$(COMPOSE) logs -f $(DB_SERVICE)
 
 # Show status of containers
 ps:
