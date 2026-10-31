@@ -54,7 +54,10 @@ class BuildHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     task_id = Column(String, ForeignKey("tasks.id"), nullable=False)
-    start_time = Column(DateTime, default=datetime.datetime.utcnow)
+    start_time = Column(
+        DateTime,
+        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+    )
     end_time = Column(DateTime, nullable=True)
     status = Column(String, nullable=False)        # 'running' | 'success' | 'failed'
     output_log = Column(Text, nullable=True)

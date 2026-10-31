@@ -3,7 +3,7 @@ COMPOSE = docker compose
 APP_SERVICE = mijen
 DB_SERVICE = db
 
-.PHONY: up down restart build rebuild reset logs logs-app logs-db ps shell clean
+.PHONY: up down restart build rebuild reset logs logs-app logs-db ps shell clean test
 
 # Start the project in the background
 up:
@@ -52,3 +52,7 @@ shell:
 # Clean up unused docker objects
 clean:
 	docker system prune -f
+
+# Run the test suite locally (SQLite, no Docker needed)
+test:
+	uv run pytest

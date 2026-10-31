@@ -4,6 +4,40 @@ All notable changes to MiJen are documented here.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Build timeout never fired** for commands that produced no output (the check only ran after stdout closed). It is now enforced by a watchdog, covers the whole build (setup + main command), and kills the entire process tree
+- **Output limit** killed only the shell, leaving child processes running; it now stops the whole process tree and applies per build
+- **Builds crashed on non-UTF-8 output** (e.g. binary bytes from a compiler); output is now decoded leniently
+- **Builds stuck in "running"**: a NUL byte in the log made the PostgreSQL commit fail; NULs are now stripped
+- **Builds stuck in "running" after a restart** are marked failed (`[INTERRUPTED]`) at startup
+- **Race in the task page**: the UI could read the build as still "running" right after it finished, and showed that as the final status
+- **Task commands could read MiJen's secrets** (`DATABASE_URL`, auth password, webhook secret) from their environment
+- **Git errors were hidden** — failed clone/pull now shows git's message in the log; git never waits for a password prompt
+- Repo URL is passed after `--` and apt package names are validated, so neither can be interpreted as a command-line option
+- **Concurrent builds of one GitHub project** could clone/pull into the same workspace at once; this step is now serialised per project
+- **Memory leak**: live-log buffers of cron/webhook builds were never freed
+- **Invalid cron expressions** (e.g. `99 * * * *`) were accepted and then silently ignored; they are now rejected in the dialog
+- **Deleted tasks kept firing** their cron jobs until restart; the scheduler is now re-synced on delete
+- Deleting a GitHub project now removes its cloned workspace
+- `init_db()` crashed on SQLite (the default `DATABASE_URL`); PostgreSQL-only migrations are now skipped on other databases
+- `MAX_OUTPUT_BYTES` and `BUILD_TIMEOUT_SECONDS` set in `.env` had no effect — they were not passed to the container
+- `uv.lock` was missing `apscheduler`
+- Webhook returned `"triggered"` with `build_id: -1` when the task's project was missing; it now returns 404
+
+### Security
+- PostgreSQL port is published on `127.0.0.1` only (was all interfaces, with a default password)
+
+### Added
+- Test suite (`pytest`, runs on SQLite): runner, storage and scheduler — `make test`
+- GitHub Actions workflow running the tests on every push and pull request
+
+### Changed
+- Docker image no longer installs dev dependencies (`uv sync --no-dev`)
+
+---
+
 ## [0.2.0] — 2026-04-21
 
 ### Added
