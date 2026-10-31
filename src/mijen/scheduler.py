@@ -18,6 +18,20 @@ except ImportError:
     log.warning("APScheduler not installed — cron triggers disabled. Run: uv add apscheduler")
 
 
+def validate_cron(expr: str) -> str | None:
+    """Return an error message if expr is not a valid 5-field crontab, else None."""
+    expr = expr.strip()
+    if len(expr.split()) != 5:
+        return "Enter a 5-field cron expression, e.g. 0 * * * *"
+    if not _available:
+        return None
+    try:
+        CronTrigger.from_crontab(expr, timezone="UTC")
+    except ValueError as e:
+        return f"Invalid cron expression: {e}"
+    return None
+
+
 def init() -> None:
     if not _available:
         return

@@ -49,11 +49,9 @@ async def webhook(tid: str, request: Request):
         if not hmac.compare_digest(token.encode(), _WEBHOOK_SECRET.encode()):
             return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    task = storage.get_task(tid)
-    if task is None:
-        return JSONResponse({"error": "task not found"}, status_code=404)
-
     build_id = runner.run_task(tid)
+    if build_id < 0:
+        return JSONResponse({"error": "task not found"}, status_code=404)
     return JSONResponse({"status": "triggered", "build_id": build_id})
 
 

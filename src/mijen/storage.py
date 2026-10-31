@@ -24,6 +24,11 @@ SessionLocal = sessionmaker(
 )
 
 
+def _utcnow() -> datetime.datetime:
+    """Naive UTC timestamp (the DB columns are timezone-less)."""
+    return datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
+
+
 # ── DTOs ──────────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -115,6 +120,7 @@ def _project_dto(p: Project, include_tasks: bool = True) -> ProjectDTO:
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     _migrate()
+    fail_interrupted_builds()
 
 
 def _migrate() -> None:
@@ -123,7 +129,14 @@ def _migrate() -> None:
     (it only creates missing tables, never alters existing ones).
     Each step uses IF NOT EXISTS / IF EXISTS so no exceptions are raised
     and the transaction never enters an aborted state.
+
+    The SQL is PostgreSQL-specific. Other databases (SQLite in tests and local
+    development) are always created fresh by create_all() with the current
+    schema, so there is nothing to migrate.
     """
+    if engine.dialect.name != "postgresql":
+        return
+
     with engine.begin() as conn:
         # v0 → v1: projects.url renamed to projects.source + new source_type column
         conn.execute(text(
@@ -292,7 +305,7 @@ def create_build(tid: str) -> int:
     with SessionLocal() as session:
         b = BuildHistory(
             task_id=tid,
-            start_time=datetime.datetime.utcnow(),
+            start_time=_utcnow(),
             status="running",
         )
         session.add(b)
@@ -304,10 +317,27 @@ def finish_build(build_id: int, status: str, output: str) -> None:
     with SessionLocal() as session:
         row = session.query(BuildHistory).filter(BuildHistory.id == build_id).first()
         if row:
-            row.end_time = datetime.datetime.utcnow()
+            row.end_time = _utcnow()
             row.status = status
-            row.output_log = output
+            # PostgreSQL TEXT cannot store NUL characters; one stray \0 in a
+            # build log would otherwise make this commit fail.
+            row.output_log = output.replace("\x00", "")
             session.commit()
+
+
+def fail_interrupted_builds() -> int:
+    """
+    Mark builds left in 'running' state (the app stopped mid-build) as failed.
+    Called once at startup, before any new build can start. Returns the count.
+    """
+    with SessionLocal() as session:
+        rows = session.query(BuildHistory).filter(BuildHistory.status == "running").all()
+        for row in rows:
+            row.status = "failed"
+            row.end_time = row.end_time or _utcnow()
+            row.output_log = (row.output_log or "") + "\n[INTERRUPTED — MiJen was restarted]\n"
+        session.commit()
+        return len(rows)
 
 
 def get_build(build_id: int) -> Optional[BuildDTO]:

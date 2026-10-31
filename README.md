@@ -161,6 +161,14 @@ Set `WEBHOOK_SECRET` in `.env` to require the header. Leave it empty to disable 
 
 ---
 
+## Security notes
+
+- Task commands run as shell scripts inside the container. Anyone who can use the UI (or write to the database) can run code there — enable `MIJEN_AUTH_USER` / `MIJEN_AUTH_PASS` and `WEBHOOK_SECRET` on any networked instance.
+- Tasks do **not** see MiJen's own secrets: `DATABASE_URL`, `POSTGRES_*`, `WEBHOOK_SECRET` and `MIJEN_AUTH_*` are removed from their environment.
+- PostgreSQL is published on `127.0.0.1:5432` only, so it is reachable from the host but not from other machines.
+
+---
+
 ## Build history
 
 The task page shows a history table with status badges that update automatically after each run. Click any row to open a dialog with the full build log, duration, and status.
@@ -215,6 +223,7 @@ SELECT id, task_id, status, start_time, end_time FROM build_history ORDER BY sta
 | `make ps` | Show container status |
 | `make shell` | Open a bash shell inside the app container |
 | `make clean` | Run `docker system prune -f` |
+| `make test` | Run the test suite locally with `uv run pytest` (SQLite, no Docker needed) |
 
 `make rebuild` is the go-to command after any code or config change — it rebuilds only the app image and hot-swaps the container without touching the database.
 
@@ -264,5 +273,5 @@ make logs        # both
 | `MIJEN_PUBLIC_URL` | `http://localhost:8080` | Used in webhook URL display |
 | `LOCAL_PROJECTS_DIR` | *(empty)* | Host path mounted at `/mnt/projects` in the container |
 | `WORKSPACES_DIR` | `/app/workspaces` | Where GitHub repos are cloned inside the container |
-| `MAX_OUTPUT_BYTES` | `1000000` (1 MB) | Build log size cap — prevents runaway output |
-| `BUILD_TIMEOUT_SECONDS` | `3600` (1 hour) | Hard timeout per build |
+| `MAX_OUTPUT_BYTES` | `1000000` (1 MB) | Build log size cap across all steps of a build; the build is stopped when exceeded |
+| `BUILD_TIMEOUT_SECONDS` | `3600` (1 hour) | Hard timeout per build (setup + main command); kills the whole process tree |

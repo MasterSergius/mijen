@@ -221,6 +221,10 @@ def create_content():
                 if err:
                     error_label.text = err
                     return
+                bad = runner.invalid_packages(packages_input.value)
+                if bad:
+                    error_label.text = f"Invalid package name(s): {' '.join(bad)}"
+                    return
                 error_label.text = ""
                 try:
                     pid = storage.create_project(
@@ -305,9 +309,14 @@ def _open_packages_dialog(pid: str):
             "Packages",
             value=project.system_packages or "",
             placeholder="cmake g++ ninja-build",
-        ).classes("w-full mb-4")
+        ).classes("w-full mb-2")
+        err = ui.label("").classes("text-red-500 text-sm mb-2")
 
         def _save():
+            bad = runner.invalid_packages(pkg_in.value)
+            if bad:
+                err.text = f"Invalid package name(s): {' '.join(bad)}"
+                return
             storage.update_project_packages(pid, pkg_in.value)
             dialog.close()
             ui.navigate.to(f"/projects/{pid}")
@@ -376,6 +385,8 @@ def _confirm_delete_project(pid: str):
 def _do_delete_project(pid: str, dialog):
     dialog.close()
     storage.delete_project(pid)
+    scheduler.sync()                 # drop cron jobs of the deleted tasks
+    runner.remove_workspace(pid)
     ui.navigate.to("/projects")
 
 
@@ -567,15 +578,15 @@ def _open_cron_dialog(tid: str, trigger_area):
         cron_in = ui.input(
             "Cron expression",
             placeholder="0 * * * *   (every hour)",
-            validation={"Required": lambda v: bool(v.strip()),
-                        "Must be 5 fields": lambda v: len(v.strip().split()) == 5},
+            validation=lambda v: scheduler.validate_cron(v),
         ).classes("w-full mb-4")
         err = ui.label("").classes("text-red-500 text-sm mb-3")
 
         def _save():
             expr = cron_in.value.strip()
-            if not expr or len(expr.split()) != 5:
-                err.text = "Enter a valid 5-field cron expression"
+            problem = scheduler.validate_cron(expr)
+            if problem:
+                err.text = problem
                 return
             storage.add_trigger(tid, "cron", {"cron": expr})
             scheduler.sync()
@@ -666,4 +677,5 @@ def _confirm_delete_task(pid: str, tid: str):
 def _do_delete_task(pid: str, tid: str, dialog):
     dialog.close()
     storage.delete_task(tid)
+    scheduler.sync()                 # drop cron jobs of the deleted task
     ui.navigate.to(f"/projects/{pid}")

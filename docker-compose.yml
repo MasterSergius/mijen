@@ -8,8 +8,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Published on localhost only: the DB holds the shell commands MiJen runs,
+    # so it must not be reachable from other machines. Not needed by the app
+    # itself (it uses the internal network); kept for host-side psql access.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -33,6 +36,9 @@ services:
       MIJEN_AUTH_PASS: ${MIJEN_AUTH_PASS:-}
       # Public base URL used when displaying webhook URLs in the UI
       MIJEN_PUBLIC_URL: ${MIJEN_PUBLIC_URL:-http://localhost:8080}
+      # Build limits
+      MAX_OUTPUT_BYTES: ${MAX_OUTPUT_BYTES:-1000000}
+      BUILD_TIMEOUT_SECONDS: ${BUILD_TIMEOUT_SECONDS:-3600}
     volumes:
       - workspaces:/app/workspaces
       - ${LOCAL_PROJECTS_DIR:-/tmp/mijen-local-projects}:/mnt/projects
