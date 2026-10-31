@@ -14,6 +14,10 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
+        with:
+          # Same as the Docker image. Without a pin uv picks the newest
+          # Python, for which lxml & co. may have no wheels yet.
+          python-version: "3.13"
 
       - name: Install dependencies
         run: uv sync --locked
